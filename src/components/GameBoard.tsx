@@ -54,15 +54,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return monsterCard.rank <= equippedWeapon.maxMonsterValue;
   };
 
-  const isCardDisabled = (card: Card): boolean => {
-    if (card.type === 'potion' && potionsUsedThisRoom >= 1) return true;
-    return false;
-  };
-
   const selectedCard = selectedIndex !== null ? room[selectedIndex] : null;
 
   const handleCardClick = (index: number) => {
-    if (isCardDisabled(room[index])) return;
     setSelectedIndex(prev => prev === index ? null : index);
   };
 
@@ -186,18 +180,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div key={roomKey} className="flex justify-center gap-4 mb-4" style={{ minHeight: '140px' }}>
             {room.map((card, index) => {
               const isCarry = carriedOverCard?.id === card.id;
-              const disabled = isCardDisabled(card);
               // New cards get a deal index; carried card doesn't re-animate
               const dealIdx = isCarry ? undefined : index;
+              const isSpentPotion = card.type === 'potion' && potionsUsedThisRoom >= 1;
               return (
                 <CardComponent
                   key={card.id}
                   card={card}
                   selected={selectedIndex === index}
                   onClick={() => handleCardClick(index)}
-                  disabled={disabled}
                   dealIndex={dealIdx}
                   isCarryOver={isCarry}
+                  dimmed={isSpentPotion}
                   className="w-24"
                 />
               );
@@ -226,17 +220,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     </button>
                   )}
                   {selectedCard.type === 'potion' && (
-                    <button
-                      onClick={() => handleAction('use_potion')}
-                      disabled={potionsUsedThisRoom >= 1}
-                      className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors font-medium ${
-                        potionsUsedThisRoom >= 1
-                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                          : 'bg-green-600 hover:bg-green-500'
-                      }`}
-                    >
-                      🧪 Drink Potion {potionsUsedThisRoom >= 1 ? '(used)' : `(+${selectedCard.rank} HP)`}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleAction('use_potion')}
+                        disabled={potionsUsedThisRoom >= 1}
+                        className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors font-medium ${
+                          potionsUsedThisRoom >= 1
+                            ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                            : 'bg-green-600 hover:bg-green-500'
+                        }`}
+                      >
+                        🧪 Drink Potion {potionsUsedThisRoom >= 1 ? '(already used this room)' : `(+${selectedCard.rank} HP)`}
+                      </button>
+                      {potionsUsedThisRoom >= 1 && (
+                        <button
+                          onClick={() => handleAction('discard_potion')}
+                          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors font-medium"
+                        >
+                          🗑️ Discard Potion
+                        </button>
+                      )}
+                    </>
                   )}
                   {selectedCard.type === 'monster' && (
                     <>

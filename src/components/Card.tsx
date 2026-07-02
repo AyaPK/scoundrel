@@ -6,6 +6,7 @@ interface CardComponentProps {
   selected?: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  dimmed?: boolean;
   className?: string;
   dealIndex?: number;
   isCarryOver?: boolean;
@@ -38,6 +39,7 @@ export const CardComponent: React.FC<CardComponentProps> = ({
   selected = false,
   onClick,
   disabled = false,
+  dimmed = false,
   className = '',
   dealIndex,
   isCarryOver = false,
@@ -46,10 +48,11 @@ export const CardComponent: React.FC<CardComponentProps> = ({
   const ringClass = card.faceUp ? `ring-2 ${typeRingColor[card.type]}` : '';
   const selectedClass = selected ? 'ring-4 ring-yellow-400 -translate-y-3 shadow-yellow-400/50' : '';
   const disabledClass = disabled ? 'opacity-40 cursor-not-allowed grayscale' : 'cursor-pointer hover:-translate-y-1 hover:shadow-xl';
+  const dimmedClass = dimmed ? 'opacity-50 grayscale' : '';
 
   return (
     <div
-      className={`relative rounded-lg overflow-hidden shadow-lg transition-all duration-200 ${ringClass} ${selectedClass} ${disabledClass} ${dealClass} ${isCarryOver ? 'ring-2 ring-yellow-600' : ''} ${className}`}
+      className={`relative rounded-lg overflow-hidden shadow-lg transition-all duration-200 ${ringClass} ${selectedClass} ${disabledClass} ${dimmedClass} ${dealClass} ${isCarryOver ? 'ring-2 ring-yellow-600' : ''} ${className}`}
       style={{ aspectRatio: '2.5 / 3.5' }}
       onClick={!disabled ? onClick : undefined}
       title={card.faceUp ? `${card.type} — value ${card.rank}` : ''}

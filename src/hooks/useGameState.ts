@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react';
-import { GameState, GameAction, Card, Weapon } from '../types/game';
+import { GameState, GameAction, Card } from '../types/game';
 import { createDeck, shuffleDeck } from '../utils/deck';
 
 const initialGameState: GameState = {
@@ -21,11 +21,12 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'START_GAME': {
       const deck = createDeck();
-      const initialRoom = deck.splice(0, 4).map(card => ({ ...card, faceUp: true }));
+      const initialRoom = deck.slice(0, 4).map(card => ({ ...card, faceUp: true }));
+      const remainingDeck = deck.slice(4);
       
       return {
         ...initialGameState,
-        dungeon: deck,
+        dungeon: remainingDeck,
         room: initialRoom,
       };
     }
@@ -36,41 +37,41 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       if (!card) return state;
 
-      let newState = { ...state };
       const newRoom = [...state.room];
       newRoom.splice(cardIndex, 1);
+      let newDiscard = [...state.discard];
+      let newHealth = state.health;
+      let newPotionsUsed = state.potionsUsedThisRoom;
+      let newWeapon = state.equippedWeapon;
 
       switch (actionType) {
         case 'equip_weapon':
           if (card.type === 'weapon') {
-            const newWeapon: Weapon = {
-              card,
-              defeatedMonsters: [],
-              maxMonsterValue: 14, // Can defeat any monster initially
-            };
-            
-            // Discard old weapon and its monsters
             if (state.equippedWeapon) {
-              newState.discard.push(...state.equippedWeapon.defeatedMonsters);
-              newState.discard.push(state.equippedWeapon.card);
+              newDiscard = [...newDiscard, ...state.equippedWeapon.defeatedMonsters, state.equippedWeapon.card];
             }
-            
-            newState.equippedWeapon = newWeapon;
+            newWeapon = { card, defeatedMonsters: [], maxMonsterValue: 14 };
           }
           break;
 
         case 'use_potion':
           if (card.type === 'potion' && state.potionsUsedThisRoom === 0) {
-            newState.health = Math.min(state.health + card.rank, state.maxHealth);
-            newState.potionsUsedThisRoom = 1;
+            newHealth = Math.min(state.health + card.rank, state.maxHealth);
+            newPotionsUsed = 1;
           }
-          newState.discard.push(card);
+          newDiscard = [...newDiscard, card];
+          break;
+
+        case 'discard_potion':
+          if (card.type === 'potion') {
+            newDiscard = [...newDiscard, card];
+          }
           break;
 
         case 'fight_monster_barehanded':
           if (card.type === 'monster') {
-            newState.health = Math.max(0, state.health - card.rank);
-            newState.discard.push(card);
+            newHealth = Math.max(0, state.health - card.rank);
+            newDiscard = [...newDiscard, card];
           }
           break;
 
@@ -78,20 +79,24 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           if (card.type === 'monster' && state.equippedWeapon) {
             const weapon = state.equippedWeapon;
             const damage = Math.max(0, card.rank - weapon.card.rank);
-            newState.health = Math.max(0, state.health - damage);
-            
-            // Update weapon with defeated monster
-            const updatedWeapon: Weapon = {
+            newHealth = Math.max(0, state.health - damage);
+            newWeapon = {
               ...weapon,
               defeatedMonsters: [...weapon.defeatedMonsters, card],
-              maxMonsterValue: card.rank - 1, // Can only defeat smaller monsters now
+              maxMonsterValue: card.rank - 1,
             };
-            newState.equippedWeapon = updatedWeapon;
           }
           break;
       }
 
-      newState.room = newRoom;
+      let newState = {
+        ...state,
+        room: newRoom,
+        discard: newDiscard,
+        health: newHealth,
+        potionsUsedThisRoom: newPotionsUsed,
+        equippedWeapon: newWeapon,
+      };
 
       // Check if room is complete (3 cards played)
       if (newRoom.length === 1) {
@@ -116,11 +121,12 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const avoidedCards = [...state.room, state.carriedOverCard].filter(Boolean) as Card[];
       const newDungeon = [...state.dungeon, ...avoidedCards];
       const shuffledDungeon = shuffleDeck(newDungeon);
-      const newRoom = shuffledDungeon.splice(0, 4).map(card => ({ ...card, faceUp: true }));
+      const newRoom = shuffledDungeon.slice(0, 4).map(card => ({ ...card, faceUp: true }));
+      const remainingDungeon = shuffledDungeon.slice(4);
 
       return {
         ...state,
-        dungeon: shuffledDungeon,
+        dungeon: remainingDungeon,
         room: newRoom,
         carriedOverCard: null,
         avoidedPreviousRoom: true,
@@ -148,11 +154,13 @@ const handleRoomComplete = (state: GameState): GameState => {
 
   // Deal new room
   const cardsToDeal = remainingCard ? 3 : 4;
-  const newRoomCards = state.dungeon.splice(0, cardsToDeal).map(card => ({ ...card, faceUp: true }));
+  const newRoomCards = state.dungeon.slice(0, cardsToDeal).map(card => ({ ...card, faceUp: true }));
+  const newDungeon = state.dungeon.slice(cardsToDeal);
   const newRoom = remainingCard ? [remainingCard, ...newRoomCards] : newRoomCards;
 
   return {
     ...state,
+    dungeon: newDungeon,
     room: newRoom,
     carriedOverCard: remainingCard || null,
     potionsUsedThisRoom: 0,
