@@ -18,6 +18,7 @@ function App() {
       health={gameState.health}
       maxHealth={gameState.maxHealth}
       potionsUsedThisRoom={gameState.potionsUsedThisRoom}
+      cardsPlayedThisRoom={gameState.cardsPlayedThisRoom}
       avoidedPreviousRoom={gameState.avoidedPreviousRoom}
       onPlayCard={playCard}
       onAvoidRoom={avoidRoom}

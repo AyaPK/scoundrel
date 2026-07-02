@@ -25,6 +25,7 @@ export interface GameState {
   maxHealth: number;
   equippedWeapon: Weapon | null;
   potionsUsedThisRoom: number;
+  cardsPlayedThisRoom: number;
   avoidedPreviousRoom: boolean;
   gameOver: boolean;
   victory: boolean;

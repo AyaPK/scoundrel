@@ -11,6 +11,7 @@ const initialGameState: GameState = {
   maxHealth: 20,
   equippedWeapon: null,
   potionsUsedThisRoom: 0,
+  cardsPlayedThisRoom: 0,
   avoidedPreviousRoom: false,
   gameOver: false,
   victory: false,
@@ -95,6 +96,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         discard: newDiscard,
         health: newHealth,
         potionsUsedThisRoom: newPotionsUsed,
+        cardsPlayedThisRoom: state.cardsPlayedThisRoom + 1,
         equippedWeapon: newWeapon,
       };
 
@@ -116,7 +118,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case 'AVOID_ROOM': {
-      if (state.avoidedPreviousRoom) return state; // Can't avoid two rooms in a row
+      if (state.avoidedPreviousRoom) return state;
+      if (state.cardsPlayedThisRoom > 0) return state;
 
       const avoidedCards = [...state.room, state.carriedOverCard].filter(Boolean) as Card[];
       const newDungeon = [...state.dungeon, ...avoidedCards];
@@ -164,6 +167,7 @@ const handleRoomComplete = (state: GameState): GameState => {
     room: newRoom,
     carriedOverCard: remainingCard || null,
     potionsUsedThisRoom: 0,
+    cardsPlayedThisRoom: 0,
     avoidedPreviousRoom: false,
   };
 };

@@ -9,6 +9,7 @@ interface GameBoardProps {
   health: number;
   maxHealth: number;
   potionsUsedThisRoom: number;
+  cardsPlayedThisRoom: number;
   avoidedPreviousRoom: boolean;
   onPlayCard: (cardIndex: number, actionType: string) => void;
   onAvoidRoom: () => void;
@@ -26,6 +27,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   health,
   maxHealth,
   potionsUsedThisRoom,
+  cardsPlayedThisRoom,
   avoidedPreviousRoom,
   onPlayCard,
   onAvoidRoom,
@@ -173,7 +175,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="bg-gray-900/70 border border-gray-700 rounded-2xl p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Current Room</h2>
-            <span className="text-xs text-gray-500">play 3 — 1 carries over</span>
+            <span className="text-xs text-gray-500">play 3 - 1 carries over</span>
           </div>
 
           {/* Cards row */}
@@ -198,7 +200,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
           </div>
 
-          {/* Action panel — always below cards, never overlapping */}
+          {/* Action panel - always below cards, never overlapping */}
           <div className="min-h-[80px] bg-gray-800/60 rounded-xl p-3 border border-gray-700">
             {selectedCard === null ? (
               <p className="text-gray-500 text-sm text-center py-2">
@@ -261,7 +263,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                           }`}
                         >
                           ⚔️ With Weapon (−{Math.max(0, selectedCard.rank - equippedWeapon.card.rank)} HP)
-                          {!canFightWithWeapon(selectedCard) && ' — too weak'}
+                          {!canFightWithWeapon(selectedCard) && ' - too weak'}
                         </button>
                       )}
                     </>
@@ -272,27 +274,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </div>
         </div>
 
-        {/* Avoid Room button — always in its own row, no z-index conflict */}
+        {/* Avoid Room button - always in its own row, no z-index conflict */}
         <div className="flex justify-center">
           <button
             onClick={() => { onAvoidRoom(); setSelectedIndex(null); }}
-            disabled={avoidedPreviousRoom}
+            disabled={avoidedPreviousRoom || cardsPlayedThisRoom > 0}
             className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all ${
-              avoidedPreviousRoom
+              avoidedPreviousRoom || cardsPlayedThisRoom > 0
                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700'
                 : 'bg-yellow-600/20 border border-yellow-600 text-yellow-400 hover:bg-yellow-600/30'
             }`}
           >
-            🏃 Avoid Room {avoidedPreviousRoom ? '— blocked (can\'t flee twice)' : ''}
+            🏃 Avoid Room
           </button>
         </div>
 
         {/* Quick rules footer */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
-          <div><span className="text-red-400">♣♠</span> Monsters — fight or take full dmg</div>
-          <div><span className="text-blue-400">♦</span> Weapons — reduce dmg, bind after use</div>
-          <div><span className="text-green-400">♥</span> Potions — heal value (1 per room)</div>
-          <div><span className="text-yellow-500">🏃</span> Flee — skip room, not twice in a row</div>
+          <div><span className="text-red-400">♣♠</span> Monsters - fight or take full dmg</div>
+          <div><span className="text-blue-400">♦</span> Weapons - reduce dmg, bind after use</div>
+          <div><span className="text-green-400">♥</span> Potions - heal value (1 per room)</div>
+          <div><span className="text-yellow-500">🏃</span> Flee - skip room, not twice in a row</div>
         </div>
       </div>
     </div>
