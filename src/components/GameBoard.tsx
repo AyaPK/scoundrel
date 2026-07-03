@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CardComponent } from './Card';
+import { DiscardPile } from './DiscardPile';
 import { Card, Weapon } from '../types/game';
 import { getCardDisplay } from '../utils/deck';
 
@@ -19,6 +20,7 @@ interface GameBoardProps {
   score: number;
   dungeonSize: number;
   carriedOverCard: Card | null;
+  discard: Card[];
   username: string;
   onViewStats?: () => void;
   onSignOut: () => void;
@@ -40,6 +42,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   score,
   dungeonSize,
   carriedOverCard,
+  discard,
   username,
   onViewStats,
   onSignOut,
@@ -182,23 +185,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             )}
           </div>
 
-          {/* Stats */}
-          <div className="bg-gray-900/70 border border-gray-700 rounded-xl p-3 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Dungeon</span>
-              <span className="text-white font-semibold">{dungeonSize} cards</span>
+          {/* Stats + Discard */}
+          <div className="bg-gray-900/70 border border-gray-700 rounded-xl p-3 flex gap-3 items-center">
+            <div className="flex-1 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Dungeon</span>
+                <span className="text-white font-semibold">{dungeonSize} cards</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Potions</span>
+                <span className={potionsUsedThisRoom ? 'text-gray-500' : 'text-green-400 font-semibold'}>
+                  {potionsUsedThisRoom ? '1 used' : 'available'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Flee</span>
+                <span className={avoidedPreviousRoom ? 'text-red-400' : 'text-yellow-400 font-semibold'}>
+                  {avoidedPreviousRoom ? 'blocked' : 'available'}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Potions</span>
-              <span className={potionsUsedThisRoom ? 'text-gray-500' : 'text-green-400 font-semibold'}>
-                {potionsUsedThisRoom ? '1 used' : 'available'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Flee</span>
-              <span className={avoidedPreviousRoom ? 'text-red-400' : 'text-yellow-400 font-semibold'}>
-                {avoidedPreviousRoom ? 'blocked' : 'available'}
-              </span>
+            <div className="border-l border-gray-700 pl-3">
+              <DiscardPile discard={discard} />
             </div>
           </div>
         </div>

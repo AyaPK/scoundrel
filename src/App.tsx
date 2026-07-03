@@ -173,6 +173,7 @@ function App() {
       score={gameState.score}
       dungeonSize={gameState.dungeon.length}
       carriedOverCard={gameState.carriedOverCard}
+      discard={gameState.discard}
       username={isGuest ? 'Guest' : (username ?? user?.email ?? 'Player')}
       onViewStats={isGuest ? undefined : () => setView('stats')}
       onSignOut={handleSignOut}

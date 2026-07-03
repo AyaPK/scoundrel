@@ -71,7 +71,7 @@ typings/
 .cache
 
 # Build output
-dist/
+dist/*
 
 # next.js build output
 .next
