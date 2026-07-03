@@ -19,6 +19,9 @@ interface GameBoardProps {
   score: number;
   dungeonSize: number;
   carriedOverCard: Card | null;
+  username: string;
+  onViewStats: () => void;
+  onSignOut: () => void;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -37,6 +40,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   score,
   dungeonSize,
   carriedOverCard,
+  username,
+  onViewStats,
+  onSignOut,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [roomKey, setRoomKey] = useState(0);
@@ -86,12 +92,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <p className="text-3xl font-bold text-white my-6">
             Score: <span className={victory ? 'text-yellow-400' : 'text-red-400'}>{score}</span>
           </p>
-          <button
-            onClick={onNewGame}
-            className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors font-semibold text-lg"
-          >
-            Play Again
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onNewGame}
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors font-semibold text-lg"
+            >
+              Play Again
+            </button>
+            <button
+              onClick={onViewStats}
+              className="w-full px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm"
+            >
+              📊 View Stats
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -106,7 +120,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="flex items-center justify-between bg-gray-900/80 border border-gray-700 rounded-2xl px-5 py-3">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-wide">Scoundrel</h1>
-            <p className="text-xs text-gray-500">dungeon card game</p>
+            <p className="text-xs text-gray-500">{username}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onViewStats}
+              className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+            >
+              📊 Stats
+            </button>
+            <button
+              onClick={onSignOut}
+              className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
           </div>
           <div className="text-right">
             <div className={`text-sm font-bold mb-1 ${health <= 5 ? 'text-red-400 hp-pulse' : 'text-gray-300'}`}>

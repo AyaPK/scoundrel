@@ -137,6 +137,10 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
 
+    case 'RESTORE_GAME': {
+      return { ...(action.payload as GameState) };
+    }
+
     default:
       return state;
   }
@@ -187,10 +191,15 @@ export const useGameState = () => {
     dispatch({ type: 'AVOID_ROOM' });
   }, []);
 
+  const restoreGame = useCallback((savedState: GameState) => {
+    dispatch({ type: 'RESTORE_GAME', payload: savedState });
+  }, []);
+
   return {
     gameState,
     startGame,
     playCard,
     avoidRoom,
+    restoreGame,
   };
 };
