@@ -17,6 +17,7 @@ function App() {
   const [view, setView] = useState<View>('game');
   const [restorePrompt, setRestorePrompt] = useState<GameState | null>(null);
   const [turnsPlayed, setTurnsPlayed] = useState(0);
+  const [isGuest, setIsGuest] = useState(false);
   const prevGameOverRef = useRef(false);
   const sessionChecked = useRef(false);
 
@@ -35,7 +36,10 @@ function App() {
 
   // Reset session check ref on logout
   useEffect(() => {
-    if (!user) sessionChecked.current = false;
+    if (!user) {
+      sessionChecked.current = false;
+      setIsGuest(false);
+    }
   }, [user]);
 
   // Save session after each card action
@@ -49,20 +53,20 @@ function App() {
     setTurnsPlayed(t => t + 1);
   }, [avoidRoom]);
 
-  // Save session to Supabase after state updates
+  // Save session to Supabase after state updates (skip for guests)
   useEffect(() => {
-    if (!user || gameState.room.length === 0 || gameState.gameOver) return;
+    if (!user || isGuest || gameState.room.length === 0 || gameState.gameOver) return;
     saveSession(gameState);
-  }, [gameState, user, saveSession]);
+  }, [gameState, user, isGuest, saveSession]);
 
-  // Save completed run on game over
+  // Save completed run on game over (skip for guests)
   useEffect(() => {
-    if (gameState.gameOver && !prevGameOverRef.current && user) {
+    if (gameState.gameOver && !prevGameOverRef.current && user && !isGuest) {
       saveCompletedRun(gameState, turnsPlayed);
       clearSession();
     }
     prevGameOverRef.current = gameState.gameOver;
-  }, [gameState.gameOver, gameState, user, turnsPlayed, saveCompletedRun, clearSession]);
+  }, [gameState.gameOver, gameState, user, isGuest, turnsPlayed, saveCompletedRun, clearSession]);
 
   const handleContinueSession = () => {
     if (restorePrompt) {
@@ -78,8 +82,14 @@ function App() {
     startGame();
   }, [clearSession, startGame]);
 
+  const handleGuest = useCallback(() => {
+    setIsGuest(true);
+    startGame();
+  }, [startGame]);
+
   const handleSignOut = useCallback(() => {
     signOut();
+    setIsGuest(false);
     setView('game');
     setRestorePrompt(null);
   }, [signOut]);
@@ -93,13 +103,14 @@ function App() {
     );
   }
 
-  // Auth gate
-  if (!user) {
+  // Auth gate (bypass if playing as guest)
+  if (!user && !isGuest) {
     return (
       <AuthScreen
         onSignUp={signUp}
         onSignIn={signIn}
         onSignInWithGoogle={signInWithGoogle}
+        onGuest={handleGuest}
         error={authError}
         loading={authLoading}
         onClearError={clearError}
@@ -107,8 +118,8 @@ function App() {
     );
   }
 
-  // Stats view
-  if (view === 'stats') {
+  // Stats view (only reachable when logged in)
+  if (view === 'stats' && user) {
     return (
       <StatsScreen
         userId={user.id}
@@ -162,8 +173,8 @@ function App() {
       score={gameState.score}
       dungeonSize={gameState.dungeon.length}
       carriedOverCard={gameState.carriedOverCard}
-      username={username ?? user.email ?? 'Player'}
-      onViewStats={() => setView('stats')}
+      username={isGuest ? 'Guest' : (username ?? user?.email ?? 'Player')}
+      onViewStats={isGuest ? undefined : () => setView('stats')}
       onSignOut={handleSignOut}
     />
   );

@@ -20,7 +20,7 @@ interface GameBoardProps {
   dungeonSize: number;
   carriedOverCard: Card | null;
   username: string;
-  onViewStats: () => void;
+  onViewStats?: () => void;
   onSignOut: () => void;
 }
 
@@ -99,12 +99,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             >
               Play Again
             </button>
-            <button
-              onClick={onViewStats}
-              className="w-full px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm"
-            >
-              📊 View Stats
-            </button>
+            {onViewStats && (
+              <button
+                onClick={onViewStats}
+                className="w-full px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm"
+              >
+                📊 View Stats
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -123,12 +125,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <p className="text-xs text-gray-500">{username}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={onViewStats}
-              className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
-            >
-              📊 Stats
-            </button>
+            {onViewStats && (
+              <button
+                onClick={onViewStats}
+                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+              >
+                📊 Stats
+              </button>
+            )}
             <button
               onClick={onSignOut}
               className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"

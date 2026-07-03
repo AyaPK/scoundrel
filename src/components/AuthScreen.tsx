@@ -4,6 +4,7 @@ interface AuthScreenProps {
   onSignUp: (email: string, password: string, username: string) => Promise<boolean>;
   onSignIn: (email: string, password: string) => Promise<boolean>;
   onSignInWithGoogle: () => Promise<void>;
+  onGuest: () => void;
   error: string | null;
   loading: boolean;
   onClearError: () => void;
@@ -13,6 +14,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   onSignUp,
   onSignIn,
   onSignInWithGoogle,
+  onGuest,
   error,
   loading,
   onClearError,
@@ -150,7 +152,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </form>
           )}
 
-          {/* Google OAuth divider */}
+          {/* Google OAuth + Guest */}
           {!signupSuccess && (
             <>
               <div className="flex items-center gap-3 my-4">
@@ -173,6 +175,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </button>
             </>
           )}
+        </div>
+
+        {/* Guest CTA — outside the card, visually distinct */}
+        <div className="mt-4 text-center">
+          <p className="text-gray-600 text-xs mb-2">Just want to try it out?</p>
+          <button
+            onClick={onGuest}
+            disabled={loading}
+            className="w-full py-3 bg-gray-800 border border-gray-700 text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-700 hover:text-white hover:border-gray-500 transition-all disabled:opacity-50"
+          >
+            Play as Guest
+          </button>
+          <p className="text-gray-700 text-xs mt-2">No account needed - progress won't be saved</p>
         </div>
       </div>
     </div>
