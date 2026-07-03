@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardComponent } from './Card';
 import { DiscardPile } from './DiscardPile';
+import { FlyingCard, FlySpec } from './FlyingCard';
 import { Card, Weapon } from '../types/game';
 import { getCardDisplay } from '../utils/deck';
 
@@ -50,6 +51,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [roomKey, setRoomKey] = useState(0);
   const [prevRoomSize, setPrevRoomSize] = useState(room.length);
+  const [flySpec, setFlySpec] = useState<FlySpec | null>(null);
+  const pendingAction = useRef<{ cardIndex: number; actionType: string } | null>(null);
+
+  const discardTargetRef = useRef<HTMLDivElement>(null);
+  const weaponTargetRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Trigger re-animation when a new room is dealt (room grows back toward 4)
   useEffect(() => {
@@ -71,11 +78,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setSelectedIndex(prev => prev === index ? null : index);
   };
 
-  const handleAction = (actionType: string) => {
+  const handleAction = useCallback((actionType: string) => {
     if (selectedIndex === null) return;
-    onPlayCard(selectedIndex, actionType);
-    setSelectedIndex(null);
-  };
+
+    const card = room[selectedIndex];
+    const sourceEl = cardRefs.current[selectedIndex];
+    const isWeaponEquip = actionType === 'equip_weapon';
+    const targetRef = isWeaponEquip ? weaponTargetRef : discardTargetRef;
+    const targetEl = targetRef.current;
+
+    if (sourceEl && targetEl) {
+      const fromRect = sourceEl.getBoundingClientRect();
+      const toRect = targetEl.getBoundingClientRect();
+      pendingAction.current = { cardIndex: selectedIndex, actionType };
+      setSelectedIndex(null);
+      setFlySpec({
+        card,
+        fromRect,
+        toRect,
+        rotate: isWeaponEquip ? 6 : -10,
+      });
+    } else {
+      onPlayCard(selectedIndex, actionType);
+      setSelectedIndex(null);
+    }
+  }, [selectedIndex, room, onPlayCard]);
+
+  const handleFlyDone = useCallback(() => {
+    if (pendingAction.current) {
+      onPlayCard(pendingAction.current.cardIndex, pendingAction.current.actionType);
+      pendingAction.current = null;
+    }
+    setFlySpec(null);
+  }, [onPlayCard]);
 
   const hpPercent = (health / maxHealth) * 100;
   const hpColor = health <= 5 ? 'bg-red-500' : health <= 10 ? 'bg-yellow-500' : 'bg-green-500';
@@ -162,7 +197,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="bg-gray-900/70 border border-gray-700 rounded-xl p-3 overflow-hidden">
             {equippedWeapon ? (
               <div className="flex gap-3 items-start">
-                <div className="flex-shrink-0" style={{ width: '44px' }}>
+                <div ref={weaponTargetRef} className="flex-shrink-0" style={{ width: '44px' }}>
                   <CardComponent card={equippedWeapon.card} className="w-full" />
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
@@ -181,7 +216,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-gray-500 text-sm italic h-full flex items-center">No weapon equipped</div>
+              <div ref={weaponTargetRef} className="text-gray-500 text-sm italic h-full flex items-center">No weapon equipped</div>
             )}
           </div>
 
@@ -205,7 +240,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </span>
               </div>
             </div>
-            <div className="border-l border-gray-700 pl-3">
+            <div ref={discardTargetRef} className="border-l border-gray-700 pl-3">
               <DiscardPile discard={discard} />
             </div>
           </div>
@@ -222,20 +257,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div key={roomKey} className="flex justify-center gap-4 mb-4" style={{ minHeight: '140px' }}>
             {room.map((card, index) => {
               const isCarry = carriedOverCard?.id === card.id;
-              // New cards get a deal index; carried card doesn't re-animate
               const dealIdx = isCarry ? undefined : index;
               const isSpentPotion = card.type === 'potion' && potionsUsedThisRoom >= 1;
               return (
-                <CardComponent
+                <div
                   key={card.id}
-                  card={card}
-                  selected={selectedIndex === index}
-                  onClick={() => handleCardClick(index)}
-                  dealIndex={dealIdx}
-                  isCarryOver={isCarry}
-                  dimmed={isSpentPotion}
-                  className="w-24"
-                />
+                  ref={el => { cardRefs.current[index] = el; }}
+                >
+                  <CardComponent
+                    card={card}
+                    selected={selectedIndex === index}
+                    onClick={() => handleCardClick(index)}
+                    dealIndex={dealIdx}
+                    isCarryOver={isCarry}
+                    dimmed={isSpentPotion}
+                    className="w-24"
+                  />
+                </div>
               );
             })}
           </div>
@@ -337,6 +375,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div><span className="text-yellow-500">🏃</span> Flee - skip room, not twice in a row</div>
         </div>
       </div>
+
+      {/* Flying card animation overlay */}
+      {flySpec && <FlyingCard spec={flySpec} onDone={handleFlyDone} />}
     </div>
   );
 };

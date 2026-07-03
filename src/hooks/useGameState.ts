@@ -100,18 +100,18 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         equippedWeapon: newWeapon,
       };
 
-      // Check if room is complete (3 cards played)
-      if (newRoom.length === 1) {
-        return handleRoomComplete(newState);
-      }
-
-      // Check game over
+      // Check game over first (lethal blow on 3rd card must still trigger death)
       if (newState.health <= 0) {
         return {
           ...newState,
           gameOver: true,
           victory: false,
         };
+      }
+
+      // Check if room is complete (3 cards played)
+      if (newRoom.length === 1) {
+        return handleRoomComplete(newState);
       }
 
       return newState;
@@ -148,7 +148,12 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
 const handleRoomComplete = (state: GameState): GameState => {
   const remainingCard = state.room[0];
-  
+
+  // Safety net: health should have been caught above, but guard here too
+  if (state.health <= 0) {
+    return { ...state, gameOver: true, victory: false };
+  }
+
   // Check victory condition
   if (state.dungeon.length === 0 && !remainingCard) {
     return {
