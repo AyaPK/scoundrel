@@ -2,7 +2,7 @@
 
 A single-player dungeon crawl card game playable in the browser.
 
-**Play it here:** (Not yet hosted)
+**Play it here:** [https://scoundrel.ayasca.dev](https://scoundrel.ayasca.dev)
 
 ---
 
