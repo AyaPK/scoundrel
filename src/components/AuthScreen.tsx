@@ -99,7 +99,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete={tab === 'signup' ? 'off' : 'on'}>
               {tab === 'signup' && (
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Username</label>
@@ -109,6 +109,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     onChange={e => setUsername(e.target.value)}
                     placeholder="e.g. dungeon_slayer"
                     required
+                    autoComplete="username"
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                   />
                 </div>
@@ -121,6 +122,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
+                  autoComplete="email"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                 />
               </div>
@@ -132,6 +134,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                 />
               </div>
