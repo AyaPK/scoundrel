@@ -102,10 +102,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
       // Check game over first (lethal blow on 3rd card must still trigger death)
       if (newState.health <= 0) {
+        const remainingMonsterValue = [...newState.dungeon, ...newState.room]
+          .filter(c => c.type === 'monster')
+          .reduce((sum, c) => sum + c.rank, 0);
         return {
           ...newState,
           gameOver: true,
           victory: false,
+          score: -remainingMonsterValue,
         };
       }
 
@@ -151,7 +155,10 @@ const handleRoomComplete = (state: GameState): GameState => {
 
   // Safety net: health should have been caught above, but guard here too
   if (state.health <= 0) {
-    return { ...state, gameOver: true, victory: false };
+    const remainingMonsterValue = [...state.dungeon, ...state.room]
+      .filter(c => c.type === 'monster')
+      .reduce((sum, c) => sum + c.rank, 0);
+    return { ...state, gameOver: true, victory: false, score: -remainingMonsterValue };
   }
 
   // Check victory condition

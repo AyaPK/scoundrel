@@ -127,9 +127,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <p className="text-gray-400 mb-2 text-sm">
             {victory ? 'You cleared the entire dungeon!' : 'Your health reached zero...'}
           </p>
-          <p className="text-3xl font-bold text-white my-6">
-            Score: <span className={victory ? 'text-yellow-400' : 'text-red-400'}>{score}</span>
-          </p>
+          <div className="my-6">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              {victory ? 'Score' : 'Monster threat remaining'}
+            </p>
+            <p className="text-3xl font-bold">
+              <span className={victory ? 'text-yellow-400' : 'text-red-400'}>{score}</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {victory ? `${score} HP remaining` : `${Math.abs(score)} monster power left in the dungeon`}
+            </p>
+          </div>
           <div className="flex flex-col gap-3">
             <button
               onClick={onNewGame}
