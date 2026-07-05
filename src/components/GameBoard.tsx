@@ -24,6 +24,7 @@ interface GameBoardProps {
   discard: Card[];
   username: string;
   onViewStats?: () => void;
+  onViewAccount?: () => void;
   onSignOut: () => void;
 }
 
@@ -46,6 +47,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   discard,
   username,
   onViewStats,
+  onViewAccount,
   onSignOut,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -177,6 +179,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
               >
                 📊 Stats
+              </button>
+            )}
+            {onViewAccount && (
+              <button
+                onClick={onViewAccount}
+                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+              >
+                ⚙️ Account
               </button>
             )}
             <button

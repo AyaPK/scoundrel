@@ -4,6 +4,7 @@ interface AuthScreenProps {
   onSignUp: (email: string, password: string, username: string) => Promise<boolean>;
   onSignIn: (email: string, password: string) => Promise<boolean>;
   onSignInWithGoogle: () => Promise<void>;
+  onResetPassword: (emailOrUsername: string) => Promise<string | null>;
   onGuest: () => void;
   error: string | null;
   loading: boolean;
@@ -14,6 +15,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   onSignUp,
   onSignIn,
   onSignInWithGoogle,
+  onResetPassword,
   onGuest,
   error,
   loading,
@@ -25,6 +27,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [username, setUsername] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   const displayError = error || localError;
 
@@ -56,7 +63,75 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setLocalError(null);
     onClearError();
     setSignupSuccess(false);
+    setShowForgot(false);
   };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotLoading(true);
+    const err = await onResetPassword(forgotIdentifier.trim());
+    setForgotLoading(false);
+    if (err) {
+      setForgotError(err);
+    } else {
+      setForgotSent(true);
+    }
+  };
+
+  if (showForgot) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-1 tracking-tight">Scoundrel</h1>
+            <p className="text-gray-500 text-sm">A dungeon crawl card game</p>
+          </div>
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+            {forgotSent ? (
+              <div className="text-center py-4">
+                <div className="text-green-400 text-2xl mb-2">✓</div>
+                <p className="text-white font-semibold mb-1">Check your email</p>
+                <p className="text-gray-400 text-sm mb-4">A password reset link has been sent if that account exists.</p>
+                <button onClick={() => { setShowForgot(false); setForgotSent(false); setForgotIdentifier(''); }} className="text-sm text-gray-400 hover:text-white underline">
+                  Back to sign in
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-white font-semibold text-base mb-1">Reset your password</h2>
+                <p className="text-gray-500 text-xs mb-4">Enter your email address or username and we'll send you a reset link.</p>
+                <form onSubmit={handleForgot} className="space-y-3">
+                  <input
+                    type="text"
+                    value={forgotIdentifier}
+                    onChange={e => { setForgotIdentifier(e.target.value); setForgotError(null); }}
+                    placeholder="Email or username"
+                    required
+                    autoComplete="email"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                  />
+                  {forgotError && (
+                    <p className="text-red-400 text-xs bg-red-900/20 border border-red-800/40 rounded-lg px-3 py-2">{forgotError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || !forgotIdentifier.trim()}
+                    className="w-full py-2.5 bg-white text-gray-900 font-semibold text-sm rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {forgotLoading ? 'Sending…' : 'Send Reset Link'}
+                  </button>
+                </form>
+                <button onClick={() => { setShowForgot(false); setForgotError(null); }} className="mt-4 text-sm text-gray-500 hover:text-white underline block">
+                  ← Back to sign in
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -115,12 +190,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  {tab === 'signin' ? 'Email or Username' : 'Email'}
+                </label>
                 <input
-                  type="email"
+                  type={tab === 'signin' ? 'text' : 'email'}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={tab === 'signin' ? 'you@example.com or username' : 'you@example.com'}
                   required
                   autoComplete="email"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
@@ -152,6 +229,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               >
                 {loading ? 'Please wait...' : tab === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
+              {tab === 'signin' && (
+                <button
+                  type="button"
+                  onClick={() => { setShowForgot(true); setForgotError(null); setForgotSent(false); onClearError(); }}
+                  className="w-full text-xs text-gray-500 hover:text-gray-300 transition-colors pt-1"
+                >
+                  Forgot your password?
+                </button>
+              )}
             </form>
           )}
 

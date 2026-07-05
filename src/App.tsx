@@ -5,13 +5,14 @@ import { useGamePersistence } from './hooks/useGamePersistence';
 import { GameBoard } from './components/GameBoard';
 import { AuthScreen } from './components/AuthScreen';
 import { StatsScreen } from './components/StatsScreen';
+import { AccountScreen } from './components/AccountScreen';
 import { GameState } from './types/game';
 
-type View = 'game' | 'stats';
+type View = 'game' | 'stats' | 'account';
 
 function App() {
   const { gameState, startGame, playCard, avoidRoom, restoreGame } = useGameState();
-  const { user, username, loading: authLoading, error: authError, signUp, signIn, signInWithGoogle, signOut, clearError } = useAuth();
+  const { user, username, loading: authLoading, error: authError, signUp, signIn, signInWithGoogle, signOut, clearError, resetPassword, updateUsername, updatePassword, deleteAccount } = useAuth();
   const { saveSession, restoreSession, clearSession, saveCompletedRun } = useGamePersistence(user?.id);
 
   const [view, setView] = useState<View>('game');
@@ -110,6 +111,7 @@ function App() {
         onSignUp={signUp}
         onSignIn={signIn}
         onSignInWithGoogle={signInWithGoogle}
+        onResetPassword={resetPassword}
         onGuest={handleGuest}
         error={authError}
         loading={authLoading}
@@ -123,8 +125,22 @@ function App() {
     return (
       <StatsScreen
         userId={user.id}
-        username={username ?? user.email ?? 'Player'}
+        username={username ?? 'Player'}
         onBack={() => setView('game')}
+      />
+    );
+  }
+
+  // Account view (only reachable when logged in)
+  if (view === 'account' && user) {
+    return (
+      <AccountScreen
+        user={user}
+        username={username}
+        onBack={() => setView('game')}
+        onUpdateUsername={updateUsername}
+        onUpdatePassword={updatePassword}
+        onDeleteAccount={deleteAccount}
       />
     );
   }
@@ -174,8 +190,9 @@ function App() {
       dungeonSize={gameState.dungeon.length}
       carriedOverCard={gameState.carriedOverCard}
       discard={gameState.discard}
-      username={isGuest ? 'Guest' : (username ?? user?.email ?? 'Player')}
+      username={isGuest ? 'Guest' : (username ?? 'Player')}
       onViewStats={isGuest ? undefined : () => setView('stats')}
+      onViewAccount={isGuest ? undefined : () => setView('account')}
       onSignOut={handleSignOut}
     />
   );
