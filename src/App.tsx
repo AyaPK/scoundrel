@@ -2,17 +2,30 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth';
 import { useGamePersistence } from './hooks/useGamePersistence';
+import { useTutorial, TUTORIAL_STEPS } from './hooks/useTutorial';
 import { GameBoard } from './components/GameBoard';
 import { AuthScreen } from './components/AuthScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { AccountScreen } from './components/AccountScreen';
 import { GameState } from './types/game';
+import { createTutorialDeck } from './utils/tutorialDeck';
 
-type View = 'home' | 'game' | 'stats' | 'account' | 'tutorial';
+type View = 'home' | 'game' | 'stats' | 'account';
 
 function App() {
-  const { gameState, startGame, playCard, avoidRoom, restoreGame } = useGameState();
+  const { gameState, startGame, startGameWithDeck, playCard, avoidRoom, restoreGame } = useGameState();
+  const {
+    tutorialActive,
+    tutorialStep,
+    tutorialStepIndex,
+    tutorialShaking,
+    startTutorial,
+    exitTutorial,
+    advanceTutorial,
+    checkTutorialAction,
+    onTutorialActionCompleted,
+  } = useTutorial();
   const { user, username, loading: authLoading, error: authError, signUp, signIn, signInWithGoogle, signOut, clearError, resetPassword, updateUsername, updatePassword, deleteAccount } = useAuth();
   const { saveSession, restoreSession, clearSession, saveCompletedRun } = useGamePersistence(user?.id);
 
@@ -90,6 +103,32 @@ function App() {
     setView('home');
   }, []);
 
+  const handleStartTutorial = useCallback(() => {
+    startGameWithDeck(createTutorialDeck());
+    startTutorial();
+    setView('game');
+  }, [startGameWithDeck, startTutorial]);
+
+  const handleExitTutorial = useCallback(() => {
+    exitTutorial();
+    handleGoHome();
+  }, [exitTutorial, handleGoHome]);
+
+  // Auto-advance tutorial on room change (carry_over -> room2_start)
+  const prevRoomRef = useRef(0);
+  useEffect(() => {
+    if (!tutorialActive) return;
+    const prevRoom = prevRoomRef.current;
+    const newRoom = gameState.room.length;
+    if (newRoom >= 4 && prevRoom < 4) {
+      // carry_over (idx 4) → room2_start, carry_over_2 (idx 10) → room3_start
+      if (tutorialStepIndex === 4 || tutorialStepIndex === 10) {
+        advanceTutorial();
+      }
+    }
+    prevRoomRef.current = newRoom;
+  }, [gameState.room.length, tutorialActive, tutorialStepIndex, advanceTutorial]);
+
   const handleGuest = useCallback(() => {
     setIsGuest(true);
     setView('home');
@@ -136,7 +175,7 @@ function App() {
         hasSavedSession={savedSession !== null}
         onNewGame={handleNewGame}
         onContinue={handleContinueSession}
-        onHowToPlay={() => setView('tutorial')}
+        onHowToPlay={handleStartTutorial}
         onViewStats={() => setView('stats')}
         onViewAccount={() => setView('account')}
         onSignOut={handleSignOut}
@@ -145,27 +184,6 @@ function App() {
     );
   }
 
-  // Tutorial stub
-  if (view === 'tutorial') {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: 'radial-gradient(ellipse at top, #1a0a2e 0%, #0d0d1a 100%)' }}
-      >
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
-          <div className="text-3xl mb-4">📖</div>
-          <h2 className="text-white text-xl font-bold mb-2">How to Play</h2>
-          <p className="text-gray-400 text-sm mb-6">Tutorial coming soon!</p>
-          <button
-            onClick={handleGoHome}
-            className="w-full py-2.5 bg-gray-800 border border-gray-700 text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            ← Back
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Stats view (only reachable when logged in)
   if (view === 'stats' && user) {
@@ -212,7 +230,15 @@ function App() {
       carriedOverCard={gameState.carriedOverCard}
       discard={gameState.discard}
       username={isGuest ? 'Guest' : (username ?? 'Player')}
-      onMenu={handleGoHome}
+      onMenu={tutorialActive ? handleExitTutorial : handleGoHome}
+      tutorialStep={tutorialActive ? tutorialStep : undefined}
+      tutorialStepIndex={tutorialActive ? tutorialStepIndex : undefined}
+      tutorialTotalSteps={TUTORIAL_STEPS.length}
+      tutorialShaking={tutorialShaking}
+      onTutorialNext={tutorialActive ? advanceTutorial : undefined}
+      onTutorialExit={tutorialActive ? handleExitTutorial : undefined}
+      onTutorialAction={tutorialActive ? checkTutorialAction : undefined}
+      onTutorialActionCompleted={tutorialActive ? onTutorialActionCompleted : undefined}
     />
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardComponent } from './Card';
 import { DiscardPile } from './DiscardPile';
 import { FlyingCard, FlySpec } from './FlyingCard';
+import { TutorialOverlay } from './TutorialOverlay';
+import { TutorialStep } from '../hooks/useTutorial';
 import { Card, Weapon } from '../types/game';
 import { getCardDisplay } from '../utils/deck';
 
@@ -24,6 +26,14 @@ interface GameBoardProps {
   discard: Card[];
   username: string;
   onMenu: () => void;
+  tutorialStep?: TutorialStep;
+  tutorialStepIndex?: number;
+  tutorialTotalSteps?: number;
+  tutorialShaking?: boolean;
+  onTutorialNext?: () => void;
+  onTutorialExit?: () => void;
+  onTutorialAction?: (cardId: string, actionType: string) => boolean;
+  onTutorialActionCompleted?: (actionType: string) => void;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -45,6 +55,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   discard,
   username,
   onMenu,
+  tutorialStep,
+  tutorialStepIndex = 0,
+  tutorialTotalSteps = 9,
+  tutorialShaking = false,
+  onTutorialNext,
+  onTutorialExit,
+  onTutorialAction,
+  onTutorialActionCompleted,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [roomKey, setRoomKey] = useState(0);
@@ -54,7 +72,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const discardTargetRef = useRef<HTMLDivElement>(null);
   const weaponTargetRef = useRef<HTMLDivElement>(null);
+  const weaponPanelRef = useRef<HTMLDivElement>(null);
+  const avoidBtnRef = useRef<HTMLButtonElement>(null);
+  const roomAreaRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Compute target rect for tutorial highlight
+  const [tutorialTargetRect, setTutorialTargetRect] = useState<DOMRect | null>(null);
+  useEffect(() => {
+    if (!tutorialStep) { setTutorialTargetRect(null); return; }
+    const h = tutorialStep.highlight;
+    const cardId = tutorialStep.highlightCardId;
+    let el: HTMLElement | null = null;
+    if (h === 'room') el = roomAreaRef.current;
+    else if (h === 'weapon_panel') el = weaponPanelRef.current;
+    else if (h === 'avoid_btn') el = avoidBtnRef.current;
+    else if (cardId) {
+      // Find card by ID in the current room, then look up its ref by position
+      const idx = room.findIndex(c => c.id === cardId);
+      if (idx !== -1) el = cardRefs.current[idx];
+    }
+    setTutorialTargetRect(el ? el.getBoundingClientRect() : null);
+  }, [tutorialStep, room]);
 
   // Trigger re-animation when a new room is dealt (room grows back toward 4)
   useEffect(() => {
@@ -80,6 +119,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (selectedIndex === null) return;
 
     const card = room[selectedIndex];
+
+    // Tutorial gating
+    if (onTutorialAction) {
+      const allowed = onTutorialAction(card.id, actionType);
+      if (!allowed) return;
+    }
+
     const sourceEl = cardRefs.current[selectedIndex];
     const isWeaponEquip = actionType === 'equip_weapon';
     const targetRef = isWeaponEquip ? weaponTargetRef : discardTargetRef;
@@ -96,19 +142,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         toRect,
         rotate: isWeaponEquip ? 6 : -10,
       });
+      // onTutorialActionCompleted fires in handleFlyDone after animation completes
     } else {
       onPlayCard(selectedIndex, actionType);
       setSelectedIndex(null);
+      onTutorialActionCompleted?.(actionType);
     }
-  }, [selectedIndex, room, onPlayCard]);
+  }, [selectedIndex, room, onPlayCard, onTutorialAction, onTutorialActionCompleted]);
 
   const handleFlyDone = useCallback(() => {
     if (pendingAction.current) {
-      onPlayCard(pendingAction.current.cardIndex, pendingAction.current.actionType);
+      const { cardIndex, actionType } = pendingAction.current;
+      onPlayCard(cardIndex, actionType);
+      onTutorialActionCompleted?.(actionType);
       pendingAction.current = null;
     }
     setFlySpec(null);
-  }, [onPlayCard]);
+  }, [onPlayCard, onTutorialActionCompleted]);
 
   const hpPercent = (health / maxHealth) * 100;
   const hpColor = health <= 5 ? 'bg-red-500' : health <= 10 ? 'bg-yellow-500' : 'bg-green-500';
@@ -184,7 +234,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Status row */}
         <div className="grid grid-cols-2 gap-3">
           {/* Weapon */}
-          <div className="bg-gray-900/70 border border-gray-700 rounded-xl p-3 overflow-hidden">
+          <div ref={weaponPanelRef} className="bg-gray-900/70 border border-gray-700 rounded-xl p-3 overflow-hidden">
             {equippedWeapon ? (
               <div className="flex gap-3 items-start">
                 <div ref={weaponTargetRef} className="flex-shrink-0" style={{ width: '44px' }}>
@@ -237,7 +287,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
 
         {/* Room */}
-        <div className="bg-gray-900/70 border border-gray-700 rounded-2xl p-4">
+        <div ref={roomAreaRef} className="bg-gray-900/70 border border-gray-700 rounded-2xl p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Current Room</h2>
             <span className="text-xs text-gray-500">play 3 - 1 carries over</span>
@@ -345,7 +395,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Avoid Room button - always in its own row, no z-index conflict */}
         <div className="flex justify-center">
           <button
-            onClick={() => { onAvoidRoom(); setSelectedIndex(null); }}
+            ref={avoidBtnRef}
+            onClick={() => {
+              if (onTutorialAction) {
+                const allowed = onTutorialAction('', 'avoid_room');
+                if (!allowed) return;
+              }
+              onAvoidRoom();
+              setSelectedIndex(null);
+              onTutorialActionCompleted?.('avoid_room');
+            }}
             disabled={avoidedPreviousRoom || cardsPlayedThisRoom > 0}
             className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all ${
               avoidedPreviousRoom || cardsPlayedThisRoom > 0
@@ -356,6 +415,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             🏃 Avoid Room
           </button>
         </div>
+
+        {/* Tutorial info step: block all card clicks during info steps */}
+        {tutorialStep && tutorialStep.isInfo && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+        )}
 
         {/* Quick rules footer */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -368,6 +432,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* Flying card animation overlay */}
       {flySpec && <FlyingCard spec={flySpec} onDone={handleFlyDone} />}
+
+      {/* Tutorial overlay */}
+      {tutorialStep && onTutorialNext && onTutorialExit && (
+        <TutorialOverlay
+          step={tutorialStep}
+          stepIndex={tutorialStepIndex}
+          totalSteps={tutorialTotalSteps}
+          targetRect={tutorialTargetRect}
+          shaking={tutorialShaking}
+          onNext={onTutorialNext}
+          onExit={onTutorialExit}
+          isComplete={tutorialStep.id === 'complete'}
+        />
+      )}
     </div>
   );
 };

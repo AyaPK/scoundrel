@@ -33,6 +33,6 @@ export interface GameState {
 }
 
 export interface GameAction {
-  type: 'START_GAME' | 'PLAY_CARD' | 'EQUIP_WEAPON' | 'USE_POTION' | 'FIGHT_MONSTER' | 'AVOID_ROOM' | 'NEXT_ROOM' | 'RESTORE_GAME';
+  type: 'START_GAME' | 'START_GAME_WITH_DECK' | 'PLAY_CARD' | 'EQUIP_WEAPON' | 'USE_POTION' | 'FIGHT_MONSTER' | 'AVOID_ROOM' | 'NEXT_ROOM' | 'RESTORE_GAME';
   payload?: any;
 }

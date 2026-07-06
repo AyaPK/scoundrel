@@ -32,6 +32,17 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
 
+    case 'START_GAME_WITH_DECK': {
+      const deck: Card[] = action.payload;
+      const initialRoom = deck.slice(0, 4).map(card => ({ ...card, faceUp: true }));
+      const remainingDeck = deck.slice(4);
+      return {
+        ...initialGameState,
+        dungeon: remainingDeck,
+        room: initialRoom,
+      };
+    }
+
     case 'PLAY_CARD': {
       const { cardIndex, actionType } = action.payload;
       const card = state.room[cardIndex];
@@ -195,6 +206,10 @@ export const useGameState = () => {
     dispatch({ type: 'START_GAME' });
   }, []);
 
+  const startGameWithDeck = useCallback((deck: Card[]) => {
+    dispatch({ type: 'START_GAME_WITH_DECK', payload: deck });
+  }, []);
+
   const playCard = useCallback((cardIndex: number, actionType: string) => {
     dispatch({ type: 'PLAY_CARD', payload: { cardIndex, actionType } });
   }, []);
@@ -210,6 +225,7 @@ export const useGameState = () => {
   return {
     gameState,
     startGame,
+    startGameWithDeck,
     playCard,
     avoidRoom,
     restoreGame,
