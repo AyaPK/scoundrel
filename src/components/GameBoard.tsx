@@ -23,9 +23,7 @@ interface GameBoardProps {
   carriedOverCard: Card | null;
   discard: Card[];
   username: string;
-  onViewStats?: () => void;
-  onViewAccount?: () => void;
-  onSignOut: () => void;
+  onMenu: () => void;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -46,9 +44,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   carriedOverCard,
   discard,
   username,
-  onViewStats,
-  onViewAccount,
-  onSignOut,
+  onMenu,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [roomKey, setRoomKey] = useState(0);
@@ -145,16 +141,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               onClick={onNewGame}
               className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors font-semibold text-lg"
             >
-              Play Again
+              ← Menu
             </button>
-            {onViewStats && (
-              <button
-                onClick={onViewStats}
-                className="w-full px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm"
-              >
-                📊 View Stats
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -173,27 +161,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <p className="text-xs text-gray-500">{username}</p>
           </div>
           <div className="flex items-center gap-2">
-            {onViewStats && (
-              <button
-                onClick={onViewStats}
-                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
-              >
-                📊 Stats
-              </button>
-            )}
-            {onViewAccount && (
-              <button
-                onClick={onViewAccount}
-                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
-              >
-                ⚙️ Account
-              </button>
-            )}
             <button
-              onClick={onSignOut}
+              onClick={onMenu}
               className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
             >
-              Sign Out
+              ← Menu
             </button>
           </div>
           <div className="text-right">

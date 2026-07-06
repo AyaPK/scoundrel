@@ -4,42 +4,43 @@ import { useAuth } from './hooks/useAuth';
 import { useGamePersistence } from './hooks/useGamePersistence';
 import { GameBoard } from './components/GameBoard';
 import { AuthScreen } from './components/AuthScreen';
+import { HomeScreen } from './components/HomeScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { AccountScreen } from './components/AccountScreen';
 import { GameState } from './types/game';
 
-type View = 'game' | 'stats' | 'account';
+type View = 'home' | 'game' | 'stats' | 'account' | 'tutorial';
 
 function App() {
   const { gameState, startGame, playCard, avoidRoom, restoreGame } = useGameState();
   const { user, username, loading: authLoading, error: authError, signUp, signIn, signInWithGoogle, signOut, clearError, resetPassword, updateUsername, updatePassword, deleteAccount } = useAuth();
   const { saveSession, restoreSession, clearSession, saveCompletedRun } = useGamePersistence(user?.id);
 
-  const [view, setView] = useState<View>('game');
-  const [restorePrompt, setRestorePrompt] = useState<GameState | null>(null);
+  const [view, setView] = useState<View>('home');
+  const [savedSession, setSavedSession] = useState<GameState | null>(null);
   const [turnsPlayed, setTurnsPlayed] = useState(0);
   const [isGuest, setIsGuest] = useState(false);
   const prevGameOverRef = useRef(false);
   const sessionChecked = useRef(false);
 
-  // On login, check for a saved session
+  // On login, check for a saved session then land on home
   useEffect(() => {
     if (!user || sessionChecked.current) return;
     sessionChecked.current = true;
     restoreSession().then(saved => {
       if (saved && !saved.gameOver) {
-        setRestorePrompt(saved);
-      } else {
-        startGame();
+        setSavedSession(saved);
       }
+      setView('home');
     });
-  }, [user, restoreSession, startGame]);
+  }, [user, restoreSession]);
 
   // Reset session check ref on logout
   useEffect(() => {
     if (!user) {
       sessionChecked.current = false;
       setIsGuest(false);
+      setSavedSession(null);
     }
   }, [user]);
 
@@ -69,30 +70,36 @@ function App() {
     prevGameOverRef.current = gameState.gameOver;
   }, [gameState.gameOver, gameState, user, isGuest, turnsPlayed, saveCompletedRun, clearSession]);
 
-  const handleContinueSession = () => {
-    if (restorePrompt) {
-      restoreGame(restorePrompt);
-      setRestorePrompt(null);
+  const handleContinueSession = useCallback(() => {
+    if (savedSession) {
+      restoreGame(savedSession);
+      setSavedSession(null);
+      setView('game');
     }
-  };
+  }, [savedSession, restoreGame]);
 
   const handleNewGame = useCallback(() => {
     clearSession();
     setTurnsPlayed(0);
-    setRestorePrompt(null);
+    setSavedSession(null);
     startGame();
+    setView('game');
   }, [clearSession, startGame]);
+
+  const handleGoHome = useCallback(() => {
+    setView('home');
+  }, []);
 
   const handleGuest = useCallback(() => {
     setIsGuest(true);
-    startGame();
-  }, [startGame]);
+    setView('home');
+  }, []);
 
   const handleSignOut = useCallback(() => {
     signOut();
     setIsGuest(false);
-    setView('game');
-    setRestorePrompt(null);
+    setView('home');
+    setSavedSession(null);
   }, [signOut]);
 
   // Loading spinner
@@ -120,13 +127,53 @@ function App() {
     );
   }
 
+  // Home screen
+  if (view === 'home') {
+    return (
+      <HomeScreen
+        username={isGuest ? null : (username ?? null)}
+        isGuest={isGuest}
+        hasSavedSession={savedSession !== null}
+        onNewGame={handleNewGame}
+        onContinue={handleContinueSession}
+        onHowToPlay={() => setView('tutorial')}
+        onViewStats={() => setView('stats')}
+        onViewAccount={() => setView('account')}
+        onSignOut={handleSignOut}
+        onSignIn={handleSignOut}
+      />
+    );
+  }
+
+  // Tutorial stub
+  if (view === 'tutorial') {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'radial-gradient(ellipse at top, #1a0a2e 0%, #0d0d1a 100%)' }}
+      >
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+          <div className="text-3xl mb-4">📖</div>
+          <h2 className="text-white text-xl font-bold mb-2">How to Play</h2>
+          <p className="text-gray-400 text-sm mb-6">Tutorial coming soon!</p>
+          <button
+            onClick={handleGoHome}
+            className="w-full py-2.5 bg-gray-800 border border-gray-700 text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Stats view (only reachable when logged in)
   if (view === 'stats' && user) {
     return (
       <StatsScreen
         userId={user.id}
         username={username ?? 'Player'}
-        onBack={() => setView('game')}
+        onBack={handleGoHome}
       />
     );
   }
@@ -137,7 +184,7 @@ function App() {
       <AccountScreen
         user={user}
         username={username}
-        onBack={() => setView('game')}
+        onBack={handleGoHome}
         onUpdateUsername={updateUsername}
         onUpdatePassword={updatePassword}
         onDeleteAccount={deleteAccount}
@@ -145,33 +192,7 @@ function App() {
     );
   }
 
-  // Restore session prompt modal
-  if (restorePrompt) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
-          <div className="text-3xl mb-4">⚔️</div>
-          <h2 className="text-white text-xl font-bold mb-2">Continue your run?</h2>
-          <p className="text-gray-400 text-sm mb-6">You have an unfinished dungeon. Pick up where you left off?</p>
-          <div className="flex gap-3">
-            <button
-              onClick={handleContinueSession}
-              className="flex-1 py-2.5 bg-white text-gray-900 font-semibold text-sm rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              Continue
-            </button>
-            <button
-              onClick={handleNewGame}
-              className="flex-1 py-2.5 bg-gray-800 border border-gray-700 text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              New Game
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Game view
   return (
     <GameBoard
       room={gameState.room}
@@ -183,7 +204,7 @@ function App() {
       avoidedPreviousRoom={gameState.avoidedPreviousRoom}
       onPlayCard={handlePlayCard}
       onAvoidRoom={handleAvoidRoom}
-      onNewGame={handleNewGame}
+      onNewGame={handleGoHome}
       gameOver={gameState.gameOver}
       victory={gameState.victory}
       score={gameState.score}
@@ -191,9 +212,7 @@ function App() {
       carriedOverCard={gameState.carriedOverCard}
       discard={gameState.discard}
       username={isGuest ? 'Guest' : (username ?? 'Player')}
-      onViewStats={isGuest ? undefined : () => setView('stats')}
-      onViewAccount={isGuest ? undefined : () => setView('account')}
-      onSignOut={handleSignOut}
+      onMenu={handleGoHome}
     />
   );
 }

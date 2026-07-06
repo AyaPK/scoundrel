@@ -37,8 +37,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
   const validateUsername = (u: string) => /^[a-zA-Z0-9_]{3,20}$/.test(u);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLocalError(null);
     onClearError();
 
@@ -54,8 +53,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       const ok = await onSignUp(email, password, username);
       if (ok) setSignupSuccess(true);
     } else {
-      await onSignIn(email, password);
+      const ok = await onSignIn(email, password);
+      if (ok) {
+        setEmail('');
+        setPassword('');
+      }
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && tab !== 'signin') handleSubmit();
+  };
+
+  const handleSignInSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit();
   };
 
   const switchTab = (t: 'signin' | 'signup') => {
@@ -66,8 +78,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setShowForgot(false);
   };
 
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleForgot = async () => {
+    if (!forgotIdentifier.trim()) return;
     setForgotError(null);
     setForgotLoading(true);
     const err = await onResetPassword(forgotIdentifier.trim());
@@ -101,27 +113,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <>
                 <h2 className="text-white font-semibold text-base mb-1">Reset your password</h2>
                 <p className="text-gray-500 text-xs mb-4">Enter your email address or username and we'll send you a reset link.</p>
-                <form onSubmit={handleForgot} className="space-y-3">
+                <div className="space-y-3">
                   <input
                     type="text"
                     value={forgotIdentifier}
                     onChange={e => { setForgotIdentifier(e.target.value); setForgotError(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleForgot(); }}
                     placeholder="Email or username"
-                    required
-                    autoComplete="email"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore
+                    data-bwignore
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                   />
                   {forgotError && (
                     <p className="text-red-400 text-xs bg-red-900/20 border border-red-800/40 rounded-lg px-3 py-2">{forgotError}</p>
                   )}
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleForgot}
                     disabled={forgotLoading || !forgotIdentifier.trim()}
                     className="w-full py-2.5 bg-white text-gray-900 font-semibold text-sm rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {forgotLoading ? 'Sending…' : 'Send Reset Link'}
                   </button>
-                </form>
+                </div>
                 <button onClick={() => { setShowForgot(false); setForgotError(null); }} className="mt-4 text-sm text-gray-500 hover:text-white underline block">
                   ← Back to sign in
                 </button>
@@ -173,33 +189,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 Back to sign in
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4" autoComplete={tab === 'signup' ? 'off' : 'on'}>
-              {tab === 'signup' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Username</label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    placeholder="e.g. dungeon_slayer"
-                    required
-                    autoComplete="username"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
-                  />
-                </div>
-              )}
+          ) : tab === 'signin' ? (
+            <form onSubmit={handleSignInSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">
-                  {tab === 'signin' ? 'Email or Username' : 'Email'}
-                </label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Email or Username</label>
                 <input
-                  type={tab === 'signin' ? 'text' : 'email'}
+                  type="text"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder={tab === 'signin' ? 'you@example.com or username' : 'you@example.com'}
-                  required
-                  autoComplete="email"
+                  placeholder="you@example.com or username"
+                  autoComplete="username"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                 />
               </div>
@@ -210,8 +209,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  required
-                  autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                  autoComplete="current-password"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
                 />
               </div>
@@ -227,18 +225,79 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 disabled={loading}
                 className="w-full py-2.5 bg-white text-gray-900 font-semibold text-sm rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Please wait...' : tab === 'signin' ? 'Sign In' : 'Create Account'}
+                {loading ? 'Please wait...' : 'Sign In'}
               </button>
-              {tab === 'signin' && (
-                <button
-                  type="button"
-                  onClick={() => { setShowForgot(true); setForgotError(null); setForgotSent(false); onClearError(); }}
-                  className="w-full text-xs text-gray-500 hover:text-gray-300 transition-colors pt-1"
-                >
-                  Forgot your password?
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => { setShowForgot(true); setForgotError(null); setForgotSent(false); onClearError(); }}
+                className="w-full text-xs text-gray-500 hover:text-gray-300 transition-colors pt-1"
+              >
+                Forgot your password?
+              </button>
             </form>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="e.g. dungeon_slayer"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  data-bwignore
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
+                <input
+                  type="text"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="you@example.com"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  data-bwignore
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="••••••••"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  data-bwignore
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                />
+              </div>
+
+              {displayError && (
+                <p className="text-red-400 text-xs bg-red-900/20 border border-red-800/40 rounded-lg px-3 py-2">
+                  {displayError}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full py-2.5 bg-white text-gray-900 font-semibold text-sm rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Please wait...' : 'Create Account'}
+              </button>
+            </div>
           )}
 
           {/* Google OAuth + Guest */}

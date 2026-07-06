@@ -143,13 +143,18 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
         {/* Change Password — only for email users */}
         {!oauthUser && (
           <Section title="Change Password">
-            <form onSubmit={handleUpdatePassword} className="space-y-3" autoComplete="off">
+            <form onSubmit={handleUpdatePassword} className="space-y-3" autoComplete="new-password">
+              {/* Hidden username anchors the credential so managers don't fire on unrelated interactions */}
+              <input type="text" autoComplete="username" value={username ?? ''} readOnly style={{ display: 'none' }} />
               <input
                 type="password"
                 value={newPassword}
                 onChange={e => { setNewPassword(e.target.value); setPasswordMsg(null); }}
                 placeholder="New password"
                 autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-bwignore
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
               />
               <input
@@ -158,6 +163,9 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
                 onChange={e => { setConfirmPassword(e.target.value); setPasswordMsg(null); }}
                 placeholder="Confirm new password"
                 autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-bwignore
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
               />
               {passwordMsg && (
