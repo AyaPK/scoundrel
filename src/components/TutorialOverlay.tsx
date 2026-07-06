@@ -32,65 +32,11 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     }
   }, [shaking]);
 
-  // Hole cutout via box-shadow trick
   const holePad = 8;
-  const shadowStyle: React.CSSProperties = targetRect
-    ? {
-        position: 'fixed',
-        inset: 0,
-        boxShadow: `0 0 0 9999px rgba(0,0,0,0.72)`,
-        clipPath: `polygon(
-          0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
-          ${targetRect.left - holePad}px ${targetRect.top - holePad}px,
-          ${targetRect.left - holePad}px ${targetRect.bottom + holePad}px,
-          ${targetRect.right + holePad}px ${targetRect.bottom + holePad}px,
-          ${targetRect.right + holePad}px ${targetRect.top - holePad}px,
-          ${targetRect.left - holePad}px ${targetRect.top - holePad}px
-        )`,
-        zIndex: 50,
-        pointerEvents: 'none',
-      }
-    : {
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.72)',
-        zIndex: 50,
-        pointerEvents: 'none',
-      };
-
-  const vpH = window.innerHeight;
-  const vpW = window.innerWidth;
-  const tooltipW = Math.min(300, vpW - 24);
-  const tooltipEstH = 210;
-  const tooltipGap = 12;
-  let tooltipTop: number;
-  let tooltipLeft: number;
-
-  if (!step.isInfo && targetRect) {
-    // Action-gated: anchor to top-right so it never overlaps card area or action panel
-    tooltipTop = 12;
-    tooltipLeft = vpW - tooltipW - 12;
-  } else if (targetRect) {
-    // Info step: prefer above target, fall back to below
-    const spaceAbove = targetRect.top;
-    tooltipTop = spaceAbove >= tooltipEstH + tooltipGap
-      ? targetRect.top - tooltipEstH - tooltipGap
-      : targetRect.bottom + tooltipGap;
-    tooltipLeft = Math.max(12, Math.min(
-      targetRect.left + targetRect.width / 2 - tooltipW / 2,
-      vpW - tooltipW - 12
-    ));
-  } else {
-    tooltipTop = vpH / 2 - 90;
-    tooltipLeft = vpW / 2 - tooltipW / 2;
-  }
 
   return (
     <>
-      {/* Dimmed backdrop with cutout */}
-      <div style={shadowStyle} />
-
-      {/* Highlight ring around target */}
+      {/* Highlight ring around target — no backdrop, just a glow ring */}
       {targetRect && (
         <div
           style={{
@@ -101,7 +47,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             height: targetRect.height + holePad * 2,
             borderRadius: 12,
             border: '2px solid rgba(99,102,241,0.9)',
-            boxShadow: '0 0 0 3px rgba(99,102,241,0.3)',
+            boxShadow: '0 0 0 4px rgba(99,102,241,0.25), 0 0 16px 4px rgba(99,102,241,0.2)',
             zIndex: 51,
             pointerEvents: 'none',
             animation: 'tutorialPulse 1.8s ease-in-out infinite',
@@ -109,54 +55,57 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         />
       )}
 
-      {/* Tooltip card */}
+      {/* Bottom panel — fixed, full width */}
       <div
         style={{
           position: 'fixed',
-          top: tooltipTop,
-          left: tooltipLeft,
-          width: tooltipW,
+          bottom: 0,
+          left: 0,
+          right: 0,
           zIndex: 52,
           animation: shaking ? 'tutorialShake 0.5s ease-in-out' : undefined,
         }}
-        className="bg-gray-900 border border-indigo-700 rounded-2xl p-4 shadow-2xl"
+        className="bg-gray-950 border-t-2 border-indigo-700 shadow-2xl px-5 pt-4 pb-6"
       >
-        {/* Progress dots */}
-        <div className="flex gap-1 mb-3">
+        {/* Progress bar */}
+        <div className="flex gap-1 mb-4">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div
               key={i}
-              className={`h-1 rounded-full flex-1 transition-colors ${
+              className={`h-1.5 rounded-full flex-1 transition-colors ${
                 i <= stepIndex ? 'bg-indigo-500' : 'bg-gray-700'
               }`}
             />
           ))}
         </div>
 
-        <h3 className="text-white font-bold text-sm mb-1">{step.title}</h3>
-        <p className="text-gray-300 text-xs leading-relaxed mb-3">{step.body}</p>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h3 className="text-white font-bold text-base mb-1">{step.title}</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">{step.body}</p>
+            {wrongHint && (
+              <p className="text-yellow-400 text-sm mt-2 bg-yellow-900/20 border border-yellow-800/40 rounded-lg px-3 py-1.5">
+                Try the suggested action first
+              </p>
+            )}
+          </div>
 
-        {wrongHint && (
-          <p className="text-yellow-400 text-xs mb-2 bg-yellow-900/20 border border-yellow-800/40 rounded-lg px-2 py-1">
-            Try the suggested action first
-          </p>
-        )}
-
-        <div className="flex gap-2">
-          {step.isInfo && (
+          <div className="flex flex-col gap-2 shrink-0">
+            {step.isInfo && (
+              <button
+                onClick={isComplete ? onExit : onNext}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap"
+              >
+                {isComplete ? 'Finish Tutorial' : 'Next →'}
+              </button>
+            )}
             <button
-              onClick={isComplete ? onExit : onNext}
-              className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors"
+              onClick={onExit}
+              className="px-5 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 hover:text-white text-sm rounded-xl transition-colors"
             >
-              {isComplete ? 'Finish Tutorial' : 'Next →'}
+              Skip
             </button>
-          )}
-          <button
-            onClick={onExit}
-            className="py-1.5 px-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 hover:text-white text-xs rounded-lg transition-colors"
-          >
-            Skip
-          </button>
+          </div>
         </div>
       </div>
     </>

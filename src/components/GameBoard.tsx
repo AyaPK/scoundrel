@@ -201,7 +201,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="min-h-screen p-4 md:p-6"
-         style={{ background: 'radial-gradient(ellipse at top, #1a0a2e 0%, #0d0d1a 100%)' }}>
+         style={{ background: 'radial-gradient(ellipse at top, #1a0a2e 0%, #0d0d1a 100%)', paddingBottom: tutorialStep ? '180px' : undefined }}>
       <div className="max-w-2xl mx-auto space-y-4">
 
         {/* Header bar */}
