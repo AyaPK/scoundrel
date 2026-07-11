@@ -55,7 +55,7 @@ export const CardComponent: React.FC<CardComponentProps> = ({
       className={`relative rounded-lg overflow-hidden shadow-lg transition-all duration-200 ${ringClass} ${selectedClass} ${disabledClass} ${dimmedClass} ${dealClass} ${isCarryOver ? 'ring-2 ring-yellow-600' : ''} ${className}`}
       style={{ aspectRatio: '2.5 / 3.5' }}
       onClick={!disabled ? onClick : undefined}
-      title={card.faceUp ? `${card.type} — value ${card.rank}` : ''}
+      title={card.faceUp ? `${card.type} - value ${card.rank}` : ''}
     >
       <img
         src={card.faceUp ? getCardImageUrl(card) : CARD_BACK_URL}
