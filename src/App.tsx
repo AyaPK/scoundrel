@@ -10,6 +10,7 @@ import { StatsScreen } from './components/StatsScreen';
 import { AccountScreen } from './components/AccountScreen';
 import { GameState } from './types/game';
 import { createTutorialDeck } from './utils/tutorialDeck';
+import { supabase } from './lib/supabase';
 
 type View = 'home' | 'game' | 'stats' | 'account';
 
@@ -33,6 +34,7 @@ function App() {
   const [savedSession, setSavedSession] = useState<GameState | null>(null);
   const [turnsPlayed, setTurnsPlayed] = useState(0);
   const [isGuest, setIsGuest] = useState(false);
+  const [coins, setCoins] = useState<number | null>(null);
   const prevGameOverRef = useRef(false);
   const sessionChecked = useRef(false);
 
@@ -47,6 +49,19 @@ function App() {
       setView('home');
     });
   }, [user, restoreSession]);
+
+  // Fetch coin balance whenever the user changes or a run completes
+  const fetchCoins = useCallback(async () => {
+    if (!user) { setCoins(null); return; }
+    const { data } = await supabase
+      .from('profiles')
+      .select('coins')
+      .eq('id', user.id)
+      .single();
+    if (data) setCoins(data.coins);
+  }, [user]);
+
+  useEffect(() => { fetchCoins(); }, [fetchCoins]);
 
   // Reset session check ref on logout
   useEffect(() => {
@@ -77,11 +92,11 @@ function App() {
   // Save completed run on game over (skip for guests)
   useEffect(() => {
     if (gameState.gameOver && !prevGameOverRef.current && user && !isGuest) {
-      saveCompletedRun(gameState, turnsPlayed);
+      saveCompletedRun(gameState, turnsPlayed).then(() => fetchCoins());
       clearSession();
     }
     prevGameOverRef.current = gameState.gameOver;
-  }, [gameState.gameOver, gameState, user, isGuest, turnsPlayed, saveCompletedRun, clearSession]);
+  }, [gameState.gameOver, gameState, user, isGuest, turnsPlayed, saveCompletedRun, clearSession, fetchCoins]);
 
   const handleContinueSession = useCallback(() => {
     if (savedSession) {
@@ -202,6 +217,7 @@ function App() {
       <AccountScreen
         user={user}
         username={username}
+        coins={coins}
         onBack={handleGoHome}
         onUpdateUsername={updateUsername}
         onUpdatePassword={updatePassword}

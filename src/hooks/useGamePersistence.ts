@@ -41,6 +41,10 @@ export const useGamePersistence = (userId: string | undefined) => {
       turns_played: turnsPlayed,
       final_health: gameState.health,
     });
+    await supabase.rpc('award_run_coins', {
+      p_user_id: userId,
+      p_score: gameState.score,
+    });
   }, [userId]);
 
   return { saveSession, restoreSession, clearSession, saveCompletedRun };

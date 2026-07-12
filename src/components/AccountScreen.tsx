@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js';
 interface AccountScreenProps {
   user: User;
   username: string | null;
+  coins: number | null;
   onBack: () => void;
   onUpdateUsername: (newUsername: string) => Promise<string | null>;
   onUpdatePassword: (newPassword: string) => Promise<string | null>;
@@ -23,6 +24,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode; danger?: boo
 export const AccountScreen: React.FC<AccountScreenProps> = ({
   user,
   username,
+  coins,
   onBack,
   onUpdateUsername,
   onUpdatePassword,
@@ -110,6 +112,12 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
             <div className="flex justify-between">
               <span className="text-gray-400">Sign-in method</span>
               <span className="text-white capitalize">{user.app_metadata?.provider ?? 'email'}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1 border-t border-gray-800 mt-2">
+              <span className="text-gray-400">Coins</span>
+              <span className="text-yellow-400 font-bold">
+                🪙 {coins === null ? '—' : coins.toLocaleString()}
+              </span>
             </div>
           </div>
         </Section>

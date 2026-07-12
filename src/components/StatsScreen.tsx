@@ -19,6 +19,7 @@ interface StatsScreenProps {
 export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBack }) => {
   const [runs, setRuns] = useState<GameRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState<number | null>(null);
 
   useEffect(() => {
     supabase
@@ -29,6 +30,14 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBa
       .then(({ data }) => {
         setRuns((data as GameRun[]) ?? []);
         setLoading(false);
+      });
+    supabase
+      .from('profiles')
+      .select('coins')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data) setCoins(data.coins);
       });
   }, [userId]);
 
@@ -54,6 +63,17 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBa
         >
           ← Back to Game
         </button>
+      </div>
+
+      {/* Coin balance */}
+      <div className="bg-gray-900 border border-yellow-700/50 rounded-2xl p-4 mb-4 flex items-center gap-4">
+        <div className="text-4xl">🪙</div>
+        <div>
+          <div className="text-3xl font-bold text-yellow-400">
+            {coins === null ? '—' : coins.toLocaleString()}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Coins — earned 100 + score per run</div>
+        </div>
       </div>
 
       {/* Summary stats */}
@@ -84,6 +104,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBa
                 <th className="text-left px-4 py-3">Date</th>
                 <th className="text-left px-4 py-3">Result</th>
                 <th className="text-right px-4 py-3">Score</th>
+                <th className="text-right px-4 py-3">Coins</th>
                 <th className="text-right px-4 py-3">HP Left</th>
                 <th className="text-right px-4 py-3">Turns</th>
               </tr>
@@ -101,6 +122,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBa
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-white font-medium">{run.score}</td>
+                  <td className="px-4 py-3 text-right text-yellow-400 font-medium">🪙 {Math.max(0, 100 + run.score)}</td>
                   <td className="px-4 py-3 text-right text-gray-300">{run.final_health}</td>
                   <td className="px-4 py-3 text-right text-gray-400">{run.turns_played}</td>
                 </tr>
