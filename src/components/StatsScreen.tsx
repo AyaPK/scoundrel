@@ -74,7 +74,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ userId, username, onBa
       {/* Run table */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading...</div>
+          <div className="p-8 text-center text-gray-500 text-sm">Loading...<br />Refresh the page if it takes too long.</div>
         ) : runs.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No runs yet — go play!</div>
         ) : (
