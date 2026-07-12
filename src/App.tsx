@@ -145,7 +145,7 @@ function App() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500 text-sm">Loading...</div>
+        <div className="text-gray-500 text-sm">Loading...<br />Refresh the page if it takes too long....</div>
       </div>
     );
   }
