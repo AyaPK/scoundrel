@@ -27,7 +27,7 @@ function App() {
     checkTutorialAction,
     onTutorialActionCompleted,
   } = useTutorial();
-  const { user, username, loading: authLoading, error: authError, signUp, signIn, signInWithGoogle, signOut, clearError, resetPassword, updateUsername, updatePassword, deleteAccount } = useAuth();
+  const { user, username, loading: authLoading, error: authError, signUp, signIn, signOut, clearError, resetPassword, updateUsername, updatePassword, deleteAccount } = useAuth();
   const { saveSession, restoreSession, clearSession, saveCompletedRun } = useGamePersistence(user?.id);
 
   const [view, setView] = useState<View>('home');
@@ -171,7 +171,6 @@ function App() {
       <AuthScreen
         onSignUp={signUp}
         onSignIn={signIn}
-        onSignInWithGoogle={signInWithGoogle}
         onResetPassword={resetPassword}
         onGuest={handleGuest}
         error={authError}
